@@ -1,18 +1,7 @@
 # TSTO-Patchers
 Game patchers for TSTO.
 
-## V2 - 10/02/2025
-[V2](https://github.com/AlekMunroe/TSTO-Patchers/releases/tag/V2)
-
-This is a modified version of [Bodjenie's](https://github.com/bodnjenie14/Patch-Apk) patcher.
-This version supports both IPA (IOS) and APK (Android) files.
-
-This is a merge of both patchers from [V1](https://github.com/AlekMunroe/TSTO-Patchers/releases/tag/V1).
-
-**Notes**
-* This patcher only supports Windows. Support for MacOS and Linux **Coming soon!**
-
-### How to use
+## How to use
 1. Run tsto_patcher.py in CMD
 ```
 python .\tsto_patcher.py
@@ -26,6 +15,26 @@ python .\tsto_patcher.py
 8. Your new file will be created:<br>
 APK: FILENAME-patched.apk<br>
 IPA: tsto-patched.ipa
+
+## V3 - 10/02/2025
+[V3](https://github.com/AlekMunroe/TSTO-Patchers/releases/tag/V3)
+
+**Changes:**
+* Removed system check for windows
+* Added placeholders for the input urls
+* Updated the IPA URLs to follow the same byte length rules as the APK URLs
+
+
+## V2 - 10/02/2025
+[V2](https://github.com/AlekMunroe/TSTO-Patchers/releases/tag/V2)
+
+This is a modified version of [Bodjenie's](https://github.com/bodnjenie14/Patch-Apk) patcher.
+This version supports both IPA (IOS) and APK (Android) files.
+
+This is a merge of both patchers from [V1](https://github.com/AlekMunroe/TSTO-Patchers/releases/tag/V1).
+
+**Notes**
+* This patcher only supports Windows. Support for MacOS and Linux **Coming soon!**
 
 
 ## V1 - 09/02/2025
