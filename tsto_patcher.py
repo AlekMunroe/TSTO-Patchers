@@ -14,7 +14,7 @@ import platform
 # pip install request
 import requests 
 
-is_windows = platform.system().lower() == "windows"
+#is_windows = platform.system().lower() == "windows"
 
 def configure_style():
     style = ttk.Style()
@@ -87,12 +87,14 @@ def start_apk_patcher():
 
     gameserver_entry = ttk.Entry(frame, width=50)
     gameserver_entry.grid(row=1, column=1, columnspan=2, pady=5)
+    add_placeholder(gameserver_entry, "http://192.168.1.100:80")
 
     dlcserver_label = ttk.Label(frame, text="New DLC Server URL:")
     dlcserver_label.grid(row=2, column=0, sticky="w")
 
     dlcserver_entry = ttk.Entry(frame, width=50)
     dlcserver_entry.grid(row=2, column=1, columnspan=2, pady=5)
+    add_placeholder(dlcserver_entry, "http://192.168.1.101:80")
 
     progress_bar = ttk.Progressbar(frame, orient="horizontal", mode="determinate")
     progress_bar.grid(row=3, column=0, columnspan=3, pady=10, sticky="ew")
@@ -294,7 +296,8 @@ def patch_url(file_bytes: bytearray, new_url: str) -> bytearray:
     #    - e.g. "http://example.com" => "http://example.com/static/"
     #    - e.g. "http://example.com/" => "http://example.com/static/"
     new_url = new_url.rstrip("/") + "/static/"
-
+    
+    print("NEW URL: " + new_url)
     # 2) Convert to bytes
     new_url_bytes = bytearray(new_url, "utf-8")
     new_len = len(new_url_bytes)
@@ -466,12 +469,14 @@ def start_ipa_patcher():
 
     gameserver_entry = ttk.Entry(frame, width=50)
     gameserver_entry.grid(row=1, column=1, columnspan=2, pady=5)
+    add_placeholder(gameserver_entry, "http://192.168.1.100:80")
 
     dlcserver_label = ttk.Label(frame, text="New DLC Server URL:")
     dlcserver_label.grid(row=2, column=0, sticky="w")
 
     dlcserver_entry = ttk.Entry(frame, width=50)
     dlcserver_entry.grid(row=2, column=1, columnspan=2, pady=5)
+    add_placeholder(dlcserver_entry, "http://192.168.1.101:80")
 
     progress_bar = ttk.Progressbar(frame, orient="horizontal", mode="determinate")
     progress_bar.grid(row=3, column=0, columnspan=3, pady=10, sticky="ew")
@@ -523,15 +528,37 @@ def run_ipa_script(ipa_file, server_url, dlc_url):
     if 'MayhemServerURL' in plist_data:
         if plist_data['MayhemServerURL'] == 'https://prod.simpsons-ea.com':
             plist_data['MayhemServerURL'] = server_url
-    
-    print('Updated MayhemServerURL https://prod.simpsons-ea.com with ' + server_url)
+            print('Updated MayhemServerURL https://prod.simpsons-ea.com with ' + server_url)
     
     #Update DLCLocation
     if 'DLCLocation' in plist_data:
-        if plist_data['DLCLocation'] == 'https://oct2018-4-35-0-uam5h44a.tstodlc.eamobile.com/netstorage/gameasset/direct/simpsons/':
-            plist_data['DLCLocation'] = dlc_url + '/netstorage/gameasset/direct/simpsons/'
+        original_url = plist_data['DLCLocation']
+        if original_url == 'https://oct2018-4-35-0-uam5h44a.tstodlc.eamobile.com/netstorage/gameasset/direct/simpsons/':
+            # Add /static to the new DLC URL
+            new_url = dlc_url.rstrip("/") + "/static/"
+
+            # Ensure the new URL matches the original byte length
+            original_len = len(original_url)
+            new_url_bytes = bytearray(new_url, "utf-8")
+            new_len = len(new_url_bytes)
+
+            if new_len > original_len:
+                # Truncate the new URL if it's too long
+                new_url_bytes = new_url_bytes[:original_len]
+            else:
+                # Pad with './' pairs if the new URL is shorter
+                leftover = original_len - new_len
+                new_url_bytes.extend(b'./' * (leftover // 2))
+                if leftover % 2 == 1:
+                    new_url_bytes.append(ord('/'))
+
+            # Convert the modified byte array back to a string
+            final_url = new_url_bytes.decode("utf-8", errors="ignore")
+            plist_data['DLCLocation'] = final_url
+
+            print(f"Updated DLCLocation" + original_url + " with " + final_url)
     
-    print('Updated DLCLocation https://oct2018-4-35-0-uam5h44a.tstodlc.eamobile.com/netstorage/gameasset/direct/simpsons/ with ' + dlc_url + '/netstorage/gameasset/direct/simpsons/')
+    print('Updated DLCLocation https://oct2018-4-35-0-uam5h44a.tstodlc.eamobile.com/netstorage/gameasset/direct/simpsons/ with ' + final_url + '/netstorage/gameasset/direct/simpsons/')
     
     #Save the edited Info.plist
     with open(plist_path, 'wb') as plist_file:
@@ -558,32 +585,66 @@ def browse_ipa_file():
 def show_credits():
     root = tk.Tk()
     root.title("Credits")
-    root.geometry("400x300")
+    root.geometry("500x400")
     root.configure(bg="#2e2e2e")
-    
+
     configure_style()
 
+    # Credits section
     credits_frame = tk.Frame(root, bg="#2e2e2e")
-    credits_frame.pack(fill="both", expand=True, padx=10, pady=10)
+    credits_frame.pack(fill="x", padx=10, pady=10)
 
-    credits_title = tk.Label(credits_frame,text="Credits",bg="#2e2e2e",fg="#ffffff",font=("Arial", 14),justify="center")
-    credits_title.pack(anchor="n", pady=10)
-    
-    #All the credits text will go here
+    credits_title = tk.Label(
+        credits_frame,
+        text="Credits",
+        bg="#2e2e2e",
+        fg="#ffffff",
+        font=("Arial", 15),
+        justify="center"
+    )
+    credits_title.pack(anchor="n", pady=5)
+
     credits_label = tk.Label(
         credits_frame,
-        text="BodNJenie\n"
-             "tjac\n"
-             "AlekPM",
+        text="@BodNJenie\n"
+             "@tjac\n"
+             "@AlekPM",
         bg="#2e2e2e",
         fg="#ffffff",
         font=("Arial", 12),
         justify="center"
     )
+    credits_label.pack(anchor="n", pady=5)
 
-    credits_label.pack(anchor="n", pady=10)
+    # Testers section
+    testers_frame = tk.Frame(root, bg="#2e2e2e")
+    testers_frame.pack(fill="x", padx=10, pady=10)
 
-    #Footer
+    testers_title = tk.Label(
+        testers_frame,
+        text="Testers",
+        bg="#2e2e2e",
+        fg="#ffffff",
+        font=("Arial", 15),
+        justify="center"
+    )
+    testers_title.pack(anchor="n", pady=5)  # Reduced padding for better alignment
+
+    testers_label = tk.Label(
+        testers_frame,
+        text="@rudeboy\n"
+             "@jjay121212\n"
+             "@Popo\n"
+             "@avariss\n"
+             "@jani",
+        bg="#2e2e2e",
+        fg="#ffffff",
+        font=("Arial", 12),
+        justify="center"
+    )
+    testers_label.pack(anchor="n", pady=5)  # Reduced padding to minimize gap
+
+    # Footer section
     footer_frame = tk.Frame(root, bg="#2e2e2e")
     footer_frame.pack(side="bottom", fill="x")
 
@@ -591,6 +652,24 @@ def show_credits():
     back_button.pack(side="left", padx=10, pady=5)
 
     root.mainloop()
+
+def add_placeholder(entry, placeholder):
+    #Create a placeholder behavior
+    entry.insert(0, placeholder)
+    entry.configure(foreground="#A9A9A9")
+
+    def on_focus_in(event):
+        if entry.get() == placeholder:
+            entry.delete(0, "end")
+            entry.configure(foreground="white")
+
+    def on_focus_out(event):
+        if not entry.get():
+            entry.insert(0, placeholder)
+            entry.configure(foreground="#A9A9A9")
+
+    entry.bind("<FocusIn>", on_focus_in)
+    entry.bind("<FocusOut>", on_focus_out)
     
 ###############STARTUP
 
