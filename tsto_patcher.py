@@ -497,12 +497,6 @@ def start_ipa_patcher():
     footer_label = tk.Label(footer_frame, text="Bodnjenie™", bg="#2e2e2e", fg="#ffffff", anchor="e")
     footer_label.pack(side="right", padx=10, pady=5)
 
-import os
-import zipfile
-import plistlib
-import tkinter as tk
-from tkinter import messagebox
-
 def run_ipa_script(ipa_file, server_url, dlc_url):
     extracted_folder = 'tsto_ipa_extracted'
     updated_ipa = 'tsto-patched.ipa'
@@ -555,6 +549,9 @@ def run_ipa_script(ipa_file, server_url, dlc_url):
             new_dlc_url,
             new_server_url
         ]
+        
+        print("NEW URL:::::::::::::::: " + new_dlc_url)
+        print("NEW SERVER URL::::::::::: " + new_server_url)
 
         with open(binary_path, 'rb') as file:
             content = bytearray(file.read())
