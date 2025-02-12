@@ -16,6 +16,14 @@ python .\tsto_patcher.py
 APK: FILENAME-patched.apk<br>
 IPA: tsto-patched.ipa
 
+## V4 - 12/02/2025
+[V4](https://github.com/AlekMunroe/TSTO-Patchers/releases/tag/V4)
+
+Fixed bugs - You **CAN** successfully patch an IPA.
+
+**Changes:**
+* Rewrote the run_ipa_script function (I did a whoopsie before)
+
 ## V3 - 10/02/2025
 [V3](https://github.com/AlekMunroe/TSTO-Patchers/releases/tag/V3)
 

@@ -497,84 +497,99 @@ def start_ipa_patcher():
     footer_label = tk.Label(footer_frame, text="Bodnjenie™", bg="#2e2e2e", fg="#ffffff", anchor="e")
     footer_label.pack(side="right", padx=10, pady=5)
 
+import os
+import zipfile
+import plistlib
+import tkinter as tk
+from tkinter import messagebox
+
 def run_ipa_script(ipa_file, server_url, dlc_url):
     extracted_folder = 'tsto_ipa_extracted'
     updated_ipa = 'tsto-patched.ipa'
-    
-    #Check if the IPA exists
+
     if not os.path.exists(ipa_file):
-        print('Error: ' + ipa_file + ' does not exist.')
-        exit()
-    
-    #Extract the IPA file
+        messagebox.showerror("Error", f"The file {ipa_file} does not exist.")
+        return
+
+    #Extract IPA
     with zipfile.ZipFile(ipa_file, 'r') as zip_ref:
         zip_ref.extractall(extracted_folder)
-    
-    print('Extracting ' + ipa_file)
-    
-    #Go to the .app folder
+
     app_folder = os.path.join(extracted_folder, 'Payload', 'Tapped Out.app')
-    print('Extracted ' + ipa_file + ' successfully')
-    
-    #Find and edit Info.plist
     plist_path = os.path.join(app_folder, 'Info.plist')
-    
-    with open(plist_path, 'rb') as plist_file:
-        plist_data = plistlib.load(plist_file)
-    
-    print('Found Info.plist')
-    
-    #Update MayhemServerURL
-    if 'MayhemServerURL' in plist_data:
-        if plist_data['MayhemServerURL'] == 'https://prod.simpsons-ea.com':
-            plist_data['MayhemServerURL'] = server_url
-            print('Updated MayhemServerURL https://prod.simpsons-ea.com with ' + server_url)
-    
-    #Update DLCLocation
-    if 'DLCLocation' in plist_data:
-        original_url = plist_data['DLCLocation']
-        if original_url == 'https://oct2018-4-35-0-uam5h44a.tstodlc.eamobile.com/netstorage/gameasset/direct/simpsons/':
-            # Add /static to the new DLC URL
-            new_url = dlc_url.rstrip("/") + "/static/"
+    binary_path = os.path.join(app_folder, 'Tapped Out')
 
-            # Ensure the new URL matches the original byte length
-            original_len = len(original_url)
-            new_url_bytes = bytearray(new_url, "utf-8")
-            new_len = len(new_url_bytes)
+    try:
+        #Read + update Info.plist
+        with open(plist_path, 'rb') as plist_file:
+            plist_data = plistlib.load(plist_file)
 
-            if new_len > original_len:
-                # Truncate the new URL if it's too long
-                new_url_bytes = new_url_bytes[:original_len]
-            else:
-                # Pad with './' pairs if the new URL is shorter
-                leftover = original_len - new_len
-                new_url_bytes.extend(b'./' * (leftover // 2))
-                if leftover % 2 == 1:
-                    new_url_bytes.append(ord('/'))
+        if 'MayhemServerURL' in plist_data:
+            new_server_url = server_url.rstrip('/')
+            if len(new_server_url) > len("https://syn-dir.sn.eamobile.com"):
+                raise ValueError("New MayhemServerURL is too long. Keep it short.")
+            plist_data['MayhemServerURL'] = new_server_url
+        else:
+            print("Key 'MayhemServerURL' not found.")
 
-            # Convert the modified byte array back to a string
-            final_url = new_url_bytes.decode("utf-8", errors="ignore")
-            plist_data['DLCLocation'] = final_url
+        if 'DLCLocation' in plist_data:
+            new_dlc_url = dlc_url.rstrip('/') + '/static/'
+            plist_data['DLCLocation'] = new_dlc_url
+        else:
+            print("Key 'DLCLocation' not found.")
 
-            print(f"Updated DLCLocation" + original_url + " with " + final_url)
-    
-    print('Updated DLCLocation https://oct2018-4-35-0-uam5h44a.tstodlc.eamobile.com/netstorage/gameasset/direct/simpsons/ with ' + final_url + '/netstorage/gameasset/direct/simpsons/')
-    
-    #Save the edited Info.plist
-    with open(plist_path, 'wb') as plist_file:
-        plistlib.dump(plist_data, plist_file)
-    
-    print('Saved the modified Info.plist')
-    
-    #Compress to a new IPA file
-    shutil.make_archive('tsto-updated', 'zip', extracted_folder)
-    os.rename('tsto-updated.zip', updated_ipa)
-    
-    print('Compressed to new IPA')
-    
-    print('IPA file created: ' + updated_ipa)
+        #Save updated Info.plist
+        with open(plist_path, 'wb') as plist_file:
+            plistlib.dump(plist_data, plist_file)
 
-    messagebox.showinfo("Success", f"Patched IPA created: {updated_ipa}")
+        print(f"Updated {plist_path} successfully.")
+        print(f"New MayhemServerURL: {new_server_url}")
+        print(f"New DLCLocation: {new_dlc_url}")
+
+        #Edit the binary file
+        old_urls = [
+            "http://oct2018-4-35-0-uam5h44a.tstodlc.eamobile.com/netstorage/gameasset/direct/simpsons/",
+            "https://syn-dir.sn.eamobile.com"
+        ]
+        new_urls = [
+            new_dlc_url,
+            new_server_url
+        ]
+
+        with open(binary_path, 'rb') as file:
+            content = bytearray(file.read())
+
+        #Replace URLs in the binary
+        for old_url, new_url in zip(old_urls, new_urls):
+            if len(new_url) < len(old_url):
+                new_url = new_url.ljust(len(old_url), '/')
+            elif len(new_url) > len(old_url):
+                raise ValueError(f"New URL '{new_url}' is longer than old URL '{old_url}'.")
+
+            old_url_bytes = old_url.encode('utf-8')
+            new_url_bytes = new_url.encode('utf-8')
+            content = content.replace(old_url_bytes, new_url_bytes)
+
+        #Save edited binary
+        with open(binary_path, 'wb') as file:
+            file.write(content)
+
+        print(f"Updated {binary_path} successfully.")
+
+        #Package the IPA
+        with zipfile.ZipFile(updated_ipa, 'w', zipfile.ZIP_DEFLATED) as zipf:
+            for root, _, files in os.walk(extracted_folder):
+                for file in files:
+                    file_path = os.path.join(root, file)
+                    zipf.write(file_path, os.path.relpath(file_path, extracted_folder))
+
+        print(f"Patched IPA saved as {updated_ipa}")
+        messagebox.showinfo("Success", f"Patched IPA created: {updated_ipa}")
+
+    except FileNotFoundError:
+        messagebox.showerror("Error", "Required files not found.")
+    except Exception as e:
+        messagebox.showerror("Error", f"An error occurred: {e}")
 
 def browse_ipa_file():
     file_path = filedialog.askopenfilename(filetypes=[("IPA files", "*.ipa")])

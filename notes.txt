@@ -1,8 +1,0 @@
-* IPA patching works in both Windows and MacOS (It does not rely on any Windows)
-
-APKs:
-* Patching APKs are possible manually
-* APKs ARE supported. Why is this line in the file: 
-is_windows = platform.system().lower() == "windows"
-* Was it just not tested? - Ask Bod
-* There is nothing in the file that is platform specific
