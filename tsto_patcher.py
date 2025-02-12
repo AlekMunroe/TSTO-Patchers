@@ -549,9 +549,6 @@ def run_ipa_script(ipa_file, server_url, dlc_url):
             new_dlc_url,
             new_server_url
         ]
-        
-        print("NEW URL:::::::::::::::: " + new_dlc_url)
-        print("NEW SERVER URL::::::::::: " + new_server_url)
 
         with open(binary_path, 'rb') as file:
             content = bytearray(file.read())
